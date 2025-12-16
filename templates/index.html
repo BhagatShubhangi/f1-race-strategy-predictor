@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Race Strategy Predictor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Red racing lines background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(0deg, transparent 24%, rgba(255, 0, 0, 0.05) 25%, rgba(255, 0, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, 0.05) 75%, rgba(255, 0, 0, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(255, 0, 0, 0.05) 25%, rgba(255, 0, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 0, 0, 0.05) 75%, rgba(255, 0, 0, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 5em;
+            font-weight: 700;
+            letter-spacing: 8px;
+            background: linear-gradient(180deg, #ff0000 0%, #cc0000 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logo::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #ff0000, transparent);
+        }
+
+        .tagline {
+            font-size: 1.4em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 300;
+            margin-top: 20px;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panel styling */
+        .panel {
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+            border: 2px solid #ff0000;
+            border-radius: 0;
+            padding: 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.3);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff0000, transparent, #ff0000);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .panel:hover::before {
+            opacity: 0.3;
+        }
+
+        .panel-header {
+            font-size: 2em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            color: #ff0000;
+            border-bottom: 3px solid #ff0000;
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #ff0000;
+            font-weight: 600;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #333;
+            border-radius: 0;
+            background: #000;
+            color: #fff;
+            font-size: 1.1em;
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            background: #0a0a0a;
+        }
+
+        input::placeholder {
+            color: #555;
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 22px;
+            background: #ff0000;
+            border: none;
+            border-radius: 0;
+            color: #000;
+            font-size: 1.4em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            font-family: 'Rajdhani', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .predict-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .predict-btn:hover::before {
+            left: 100%;
+        }
+
+        .predict-btn:hover {
+            background: #cc0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .predict-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Results Styling */
+        .result-grid {
+            display: grid;
+            gap: 25px;
+        }
+
+        .result-item {
+            background: #000;
+            border: 2px solid #333;
+            border-left: 6px solid #ff0000;
+            padding: 30px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .result-item:hover {
+            border-color: #ff0000;
+            background: #0a0a0a;
+            transform: translateX(10px);
+            box-shadow: -10px 0 30px rgba(255, 0, 0, 0.3);
+        }
+
+        .result-label {
+            font-size: 1em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: 400;
+        }
+
+        .result-value {
+            font-size: 2.8em;
+            color: #ff0000;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #555;
+            font-size: 1.4em;
+            padding: 80px 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .no-data::before {
+            content: '—';
+            display: block;
+            font-size: 3em;
+            color: #ff0000;
+            margin-bottom: 20px;
+        }
+
+        /* Speed lines decoration */
+        .speed-lines {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 0, 0, 0.02) 10px,
+                rgba(255, 0, 0, 0.02) 11px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Corner accents */
+        .corner-accent {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            border: 3px solid #ff0000;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .corner-accent.top-left {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-accent.top-right {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-accent.bottom-left {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-accent.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Pulse animation for results */
+        @keyframes pulse {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            animation: pulse 0.5s ease forwards;
+        }
+
+        .result-item:nth-child(1) { animation-delay: 0.1s; }
+        .result-item:nth-child(2) { animation-delay: 0.2s; }
+        .result-item:nth-child(3) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="speed-lines"></div>
+    <div class="corner-accent top-left"></div>
+    <div class="corner-accent top-right"></div>
+    <div class="corner-accent bottom-left"></div>
+    <div class="corner-accent bottom-right"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">F1 STRATEGY AI</div>
+            <div class="tagline">Machine Learning Race Engineer</div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>▶</span> RACE PARAMETERS
+                </div>
+                <form method="POST">
+                    <div class="form-group">
+                        <label>CIRCUIT</label>
+                        <input type="text" name="circuit" placeholder="Enter circuit name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>COUNTRY</label>
+                        <input type="text" name="country" placeholder="Enter country" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>SEASON</label>
+                        <input type="number" name="year" placeholder="Enter year" min="2000" max="2030" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>DRIVER ID</label>
+                        <input type="number" name="driverId" placeholder="Enter driver ID" min="1" required>
+                    </div>
+
+                    <button type="submit" class="predict-btn">
+                        GENERATE STRATEGY
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>◼</span> AI RECOMMENDATION
+                </div>
+                
+                <div class="result-grid" id="resultsContainer" style="display: none;">
+                    <div class="result-item">
+                        <div class="result-label">PIT STOPS</div>
+                        <div class="result-value" id="pitStops">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">PIT LAP</div>
+                        <div class="result-value" id="pitLap">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">TIRE COMPOUND</div>
+                        <div class="result-value" id="tireCompound">-</div>
+                    </div>
+                </div>
+                
+                <div class="no-data" id="noData">
+                    AWAITING INPUT DATA
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if we have prediction data on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // This data will be injected by Flask
+            const predictionData = {{ prediction | tojson | safe if prediction else 'null' }};
+            
+            if (predictionData) {
+                document.getElementById('noData').style.display = 'none';
+                document.getElementById('resultsContainer').style.display = 'grid';
+                
+                document.getElementById('pitStops').textContent = predictionData['Pit Stop Count'];
+                document.getElementById('pitLap').textContent = predictionData['Pit Stop Lap'];
+                document.getElementById('tireCompound').textContent = predictionData['Next Tire'];
+            }
+        });
+
+        // Form submission animation
+        document.querySelector('form').addEventListener('submit', function() {
+            const btn = document.querySelector('.predict-btn');
+            btn.textContent = 'ANALYZING...';
+            btn.style.background = '#cc0000';
+        });
+
+        // Input field animations
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            input.addEventListener('blur', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
